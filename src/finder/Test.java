@@ -8,6 +8,6 @@ public class Test {
             files[i - 1] = "/Users/Andrey/Documents/Учеба/TempFiles/file" + i + ".txt";
         }
         String words[] = {"spring", "innopolis", "cat"};
-        finder.getOccurencies(files, words, "");
+        finder.getOccurrences(files, words, "/Users/Andrey/Documents/Учеба/TempFiles/result.txt");
     }
 }

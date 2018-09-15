@@ -9,7 +9,7 @@ public class WordFinder {
     private List<String> resultList = new ArrayList<>();
     private List<Thread> threads = new ArrayList<>();
 
-    public void getOccurencies(String[] sources, String[] words, String res) {
+    public void getOccurrences(String[] sources, String[] words, String res) {
         for(String fileName: sources) {
             Thread thread = new SingleFileParser(resultList, fileName, words);
             thread.start();
@@ -25,7 +25,7 @@ public class WordFinder {
         }
 
         System.out.println(resultList);
-        save("/Users/Andrey/Documents/Учеба/TempFiles/result.txt");
+        save(res);
     }
 
     private void save(String fileName) {
@@ -39,13 +39,4 @@ public class WordFinder {
             e.printStackTrace();
         }
     }
-
-
-
-
-    private void parseSingleFile(String source, String[] words) {
-
-    }
-
-
 }
