@@ -1,20 +1,25 @@
 package finder;
 
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Queue;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SingleFileParser implements Runnable {
 
     private List<String> resultList;
     private String[] words;
-    //private Queue<String> sourcesQueue;
     private String source;
+    public static AtomicInteger wordsFind = new AtomicInteger(0);
+    public static AtomicInteger sentFind = new AtomicInteger(0);
+
 
     public SingleFileParser(List<String> resultList, String[] words, String source) {
         this.resultList = resultList;
@@ -22,60 +27,78 @@ public class SingleFileParser implements Runnable {
         this.source = source;
     }
 
-    //    public SingleFileParser(List<String> resultList, Queue<String> sourcesQueue, String[] words) {
-//        this.resultList = resultList;
-//        this.sourcesQueue = sourcesQueue;
-//        this.words = words;
-//    }
-
-//    @Override
-//    public void run() {
-//        String source;
-//        while ((source = sourcesQueue.poll()) != null) {
-//            parse(source);
-//            System.out.println("\nПОТОК : " + currentThread().getName());
-//        }
-//    }
-
     @Override
     public void run() {
-        //System.out.println("\nметод RUN потока " + Thread.currentThread().getName());
         parse(source);
     }
 
     private void parse(String source) {
-        try (Scanner scanner = new Scanner(new File(source))) {
-           // Pattern pattern = Pattern.compile("[\\?\\.!]");
-            Pattern pattern = Pattern.compile("[\\w\\d\\s]*[\\?\\.…!]");
-            Matcher matcher;
-            scanner.useDelimiter("[\n]");
-            while (scanner.hasNext()) {
-                matcher = pattern.matcher(scanner.next());
-                while (matcher.find()) {
-                    String sentence = matcher.group();
-                    checkWordsInSentence(sentence, words);
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(source));
+            int chr;
+            while ((chr = reader.read()) != -1) {
+                if (chr != '\n') {
+                    stringBuilder.append((char) Character.toLowerCase(chr));
+                }
+                if (chr == '?' || chr == '.' || chr == '…' || chr == '!') {
+                    checkWordsInSentence(stringBuilder, words);
+                    synchronized (sentFind) {
+                        sentFind.incrementAndGet();
+                    }
+                    stringBuilder.delete(0, stringBuilder.length());
                 }
             }
+            reader.read();
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+
     private void saveResultSentence(String sentence) {
         synchronized (resultList) {
-            resultList.add("\n" + sentence.trim());
+            resultList.add("\n" + sentence);
         }
     }
 
-    private boolean checkWordInSentence(String sentence, String word) {
-        sentence = sentence.toLowerCase();
-        return sentence.contains(word);
+ /*  private boolean checkWordInSentence(StringBuilder sentence, String word) {
+
+        Pattern pattern = Pattern.compile("\\b" + word + "\\b");
+        Matcher matcher = pattern.matcher(sentence.toString());
+        return matcher.find();
+    }*/
+
+    private boolean checkWordInSentence(StringBuilder stringBuilder, String word) {
+        int firstInd;
+        if ((firstInd = stringBuilder.indexOf(word)) != -1) {
+            char nextChar = stringBuilder.charAt(word.length() + firstInd);
+            if (nextChar == '!' || nextChar == '?' || nextChar == '.' ||
+                    nextChar == ',' || nextChar == ' ' || nextChar == '…') {
+                if (firstInd != 0)  {
+                    char previousChar = stringBuilder.charAt(firstInd - 1);
+                    if (previousChar == ' ' || previousChar == '\n') {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return false;
+        }
     }
 
-    private void checkWordsInSentence(String sentence, String[] words) {
+    private void checkWordsInSentence(StringBuilder sentence, String[] words) {
         for (String word : words) {
             if (checkWordInSentence(sentence, word)) {
-                saveResultSentence(sentence);
+                synchronized (wordsFind) {
+                    wordsFind.incrementAndGet();
+                }
+                saveResultSentence(sentence.toString());
                 break;
             }
         }

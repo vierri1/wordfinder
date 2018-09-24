@@ -4,13 +4,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ThreadPool {
+public class MyThreadPool {
 
     private int threadCount;
     private List<Thread> runningThreads = new CopyOnWriteArrayList<>();
     private Queue<Runnable> queueThreads = new ConcurrentLinkedQueue<>();
 
-    public ThreadPool(int threadCount) {
+    public MyThreadPool(int threadCount) {
         this.threadCount = threadCount;
     }
 
