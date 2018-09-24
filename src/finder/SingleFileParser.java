@@ -2,27 +2,18 @@ package finder;
 
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class SingleFileParser implements Runnable {
 
-    private List<String> resultList;
+    private final Set<String> resultSet;
     private String[] words;
     private String source;
     public static AtomicInteger wordsFind = new AtomicInteger(0);
-    public static AtomicInteger sentFind = new AtomicInteger(0);
 
-
-    public SingleFileParser(List<String> resultList, String[] words, String source) {
-        this.resultList = resultList;
+    public SingleFileParser(Set<String> resultSet, String[] words, String source) {
+        this.resultSet = resultSet;
         this.words = words;
         this.source = source;
     }
@@ -34,8 +25,7 @@ public class SingleFileParser implements Runnable {
 
     private void parse(String source) {
         StringBuilder stringBuilder = new StringBuilder();
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(source));
+        try(BufferedReader reader = new BufferedReader(new FileReader(source))) {
             int chr;
             while ((chr = reader.read()) != -1) {
                 if (chr != '\n') {
@@ -43,9 +33,6 @@ public class SingleFileParser implements Runnable {
                 }
                 if (chr == '?' || chr == '.' || chr == '…' || chr == '!') {
                     checkWordsInSentence(stringBuilder, words);
-                    synchronized (sentFind) {
-                        sentFind.incrementAndGet();
-                    }
                     stringBuilder.delete(0, stringBuilder.length());
                 }
             }
@@ -57,19 +44,11 @@ public class SingleFileParser implements Runnable {
         }
     }
 
-
     private void saveResultSentence(String sentence) {
-        synchronized (resultList) {
-            resultList.add("\n" + sentence);
+        synchronized (resultSet) {
+            resultSet.add("\n" + sentence);
         }
     }
-
- /*  private boolean checkWordInSentence(StringBuilder sentence, String word) {
-
-        Pattern pattern = Pattern.compile("\\b" + word + "\\b");
-        Matcher matcher = pattern.matcher(sentence.toString());
-        return matcher.find();
-    }*/
 
     private boolean checkWordInSentence(StringBuilder stringBuilder, String word) {
         int firstInd;
