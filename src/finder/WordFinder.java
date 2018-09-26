@@ -2,15 +2,12 @@ package finder;
 
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class WordFinder {
     public static int resultSentencesCount;
-    private final Set<String> resultSet = new HashSet<>();
+    private final Set<String> resultSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final int nThreads = 10;
 
     public void getOccurrences(String[] sources, String[] words, String res) {
@@ -29,14 +26,13 @@ public class WordFinder {
                 }
             }
         });
-
         resultSaver.setDaemon(true);
         resultSaver.start();
 
         ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
         List<Future> futures = new ArrayList<>();
 
-        int partsCount =  nThreads / sources.length;
+        int partsCount = nThreads / sources.length;
         if (partsCount < 1) {
             partsCount = 1;
         }
@@ -65,18 +61,20 @@ public class WordFinder {
                 count++;
             }
         }
-        System.out.println("Arrays.lentgh: " + count);
+        System.out.println("Arrays.length: " + count);
         //test
 
         for (String source : sources) {
-            for (ArrayList<String> list : arrayLists) {
-                Future future = executorService.submit(new SingleFileParser(resultSet,
-                        list.toArray(new String[list.size()]), source));
-                futures.add(future);
-            }
+            arrayLists.forEach(list -> {
+                synchronized (resultSet) {
+                    Future future = executorService.submit(new SingleFileParser(resultSet,
+                            list.toArray(new String[list.size()]), source));
+                    futures.add(future);
+                }
+            });
         }
 
-        for (Future future : futures) {
+        futures.forEach(future -> {
             try {
                 future.get();
             } catch (InterruptedException e) {
@@ -84,9 +82,9 @@ public class WordFinder {
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
-        }
-        executorService.shutdown();
+        });
         save(res);
+        executorService.shutdown();
     }
 
     private void save(String fileName) {

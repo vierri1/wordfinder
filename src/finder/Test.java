@@ -12,7 +12,7 @@ public class Test {
     public static void main(String[] args) throws IOException {
         WordFinder finder = new WordFinder();
 
-        String[] words = Files.lines(Paths.get("/Users/Andrey/IdeaProjects/Test/wordfinder/src/finder/words.txt"))
+        String[] words = Files.lines(Paths.get("/Users/Andrey/Documents/Учеба/stc13/projects/wordfinder/src/finder/words.txt"))
                 .flatMap(line -> Arrays.stream(line.split("[|]")))
                 .limit(1000)
                 .map(String::trim)
